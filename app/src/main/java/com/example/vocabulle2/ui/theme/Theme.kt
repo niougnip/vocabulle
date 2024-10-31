@@ -21,7 +21,8 @@ import com.example.vocabulle2.DutchWord
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80
+    tertiary = Pink80,
+    background = Background
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -59,7 +60,7 @@ fun Vocabulle2Theme(
 //    }
 
     MaterialTheme(
-        colorScheme = LightColorScheme,
+        colorScheme = DarkColorScheme,
         typography = Typography,
         content = content
     )
