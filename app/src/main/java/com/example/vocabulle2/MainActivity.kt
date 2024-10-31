@@ -1,13 +1,22 @@
+@file:OptIn(ExperimentalLayoutApi::class)
+
 package com.example.vocabulle2
 
+import android.content.res.Resources.Theme
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowColumn
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,12 +27,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.res.painterResource
@@ -70,6 +82,18 @@ fun SuggestionButton(value: DutchWord, isFrench: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
+fun AddCSVButton(onClick: () -> Unit) {
+    IconButton(
+        onClick = { onClick() }
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.baseline_file_add_24),
+            contentDescription = "Add csv"
+        )
+    }
+}
+
+@Composable
 fun WordToFind(value: DutchWord, isFrench: Boolean) {
     Text(
         text = if (isFrench) value.french else value.dutch,
@@ -83,23 +107,41 @@ fun WordToFind(value: DutchWord, isFrench: Boolean) {
 
 @Composable
 fun SuggestionScreen(wordToFind: DutchWord, suggestions: List<DutchWord>, isFrench: Boolean) {
-    Column {
-        WordToFind(wordToFind, isFrench)
-        LazyColumn (
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-
+    Column (
+        Modifier.background(MaterialTheme.colorScheme.background, RectangleShape).fillMaxHeight()
+    ) {
+        Row (
+            horizontalArrangement = Arrangement.End,
+            modifier = Modifier.weight(1F).fillMaxWidth().padding(15.dp)
         ) {
-            items(suggestions) {
-                suggestion -> SuggestionButton(suggestion, !isFrench) {
-                    if (suggestion.french == wordToFind.french) {
-                        // Success
-                    }
-                    else {
-                        // Error
+            AddCSVButton {
+                Log.d("TEST", "add csv")
+            }
+        }
+        FlowRow (
+            modifier = Modifier.fillMaxSize().weight(6F),
+            verticalArrangement = Arrangement.Center
+        ) {
+            WordToFind(wordToFind, isFrench)
+            LazyColumn {
+                items(suggestions) {
+                    suggestion -> SuggestionButton(suggestion, !isFrench) {
+                        if (suggestion.french == wordToFind.french) {
+                            // Success
+                        }
+                        else {
+                            // Error
+                        }
                     }
                 }
             }
+        }
+        Row (
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.weight(1F).fillMaxWidth().padding(15.dp)
+        ) {
+            Text("bob?")
         }
     }
 }
