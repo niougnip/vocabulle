@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -33,15 +34,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.pointer.motionEventSpy
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.room.Room
 import com.example.vocabulle2.ui.theme.Vocabulle2Theme
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,15 +53,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Vocabulle2Theme {
-                val wtf = DutchWord(1, "un", "éen")
-                var wordList: List<DutchWord> = emptyList()
-
-                wordList += DutchWord(1, "un", "éen")
-                wordList += DutchWord(2, "deux", "twee")
-                wordList += DutchWord(3, "trois", "drie")
-                wordList += DutchWord(4, "vier", "quatre")
-
-                SuggestionScreen(wtf, wordList, true)
+                SuggestionScreen()
             }
         }
     }
@@ -66,21 +62,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AddDataFromCSV() {
     val context = LocalContext.current
-    val resultList : MutableList<List<String>> = emptyList<List<String>>().toMutableList()
 
-    var FR = "FR"
-    var NL = "NL"
+    val isoFR = "FR"
+    val isoNL = "NL"
     val columnMap : MutableMap<String, Int> = emptyMap<String, Int>().toMutableMap()
+
+    val db = getDatabase(context)
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { result ->
         result?.let {
             context.contentResolver.openInputStream(it).use { inputStream ->
                 BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                    var line: String? = reader.readLine()
-
                     // Get the column header
+                    var line: String? = reader.readLine()
                     if (line != null) {
-                        if (line.contains(FR, true) && line.contains(NL, true)) {
+                        if (line.contains(isoFR, true) && line.contains(isoNL, true)) {
                             val isoCodes = line.split(";")
                             isoCodes.forEachIndexed { index, code -> columnMap[code] = index }
                         } else {
@@ -92,17 +88,19 @@ private fun AddDataFromCSV() {
                         Toast.makeText(context, "Le fichier est vide", Toast.LENGTH_LONG).show()
                     }
 
+                    // Get the items
                     while (line != null) {
                         line = reader.readLine()
-                        resultList += line.split(";")
                         Log.d("DATA", line)
+
+                        val resultLine = line.split(";")
+                        val french: String = columnMap[isoFR]?.let { iso -> resultLine[iso] }.toString()
+                        val dutch: String = columnMap[isoNL]?.let { iso -> resultLine[iso] }.toString()
+                        db.dao.insert(DutchWord(null, french, dutch))
                     }
                 }
             }
         }
-
-        val db = getDatabase(context)
-
     }
 
     return IconButton(
@@ -127,10 +125,12 @@ fun getDatabase(context: Context) : AppDatabase {
 }
 
 @Composable
-fun SuggestionButton(value: DutchWord, isFrench: Boolean, onClick: () -> Unit) {
+fun SuggestionButton(value: DutchWord, isFrench: Boolean, onClick: () -> Boolean) {
     Button(
         onClick = { onClick() },
-        Modifier.padding(5.dp)
+        Modifier
+            .padding(5.dp)
+            .background(if (onClick()) Color.Green else Color.Red)
     )
     {
         Text(
@@ -153,8 +153,37 @@ fun WordToFind(value: DutchWord, isFrench: Boolean) {
 }
 
 @Composable
-fun SuggestionScreen(wordToFind: DutchWord, suggestions: List<DutchWord>, isFrench: Boolean) {
-    Column (
+fun SuggestionScreen() {
+    val context = LocalContext.current
+    val db = getDatabase(context)
+    Log.d("TEST DB", db.toString())
+    val count = db.dao.countItems()
+
+//    if (count == 0) {
+//        return Text("La liste de mot est vide")
+//    }
+
+    var index: Int
+    val words: MutableList<DutchWord> = emptyList<DutchWord>().toMutableList()
+    var wordToFind: DutchWord = DutchWord(null, "0", "0")
+    var isFrench: Boolean = false
+    if (count > 0) {
+        for (i in 1..3) {
+            var word: DutchWord
+            do {
+                index = Random.nextInt(0, count) + 1
+                word = db.dao.findByOffset(index)
+                if (word == null) continue
+                if (words.map { w -> w.french }.none { w -> w == word.french }) {
+                    words += word
+                }
+            } while (words.size <= i)
+        }
+        wordToFind = words[Random.nextInt(0, 3)]
+        isFrench = Random.nextBoolean()
+    }
+
+    return Column (
         Modifier.background(MaterialTheme.colorScheme.background, RectangleShape).fillMaxHeight()
     ) {
         Row (
@@ -163,34 +192,46 @@ fun SuggestionScreen(wordToFind: DutchWord, suggestions: List<DutchWord>, isFren
         ) {
             AddDataFromCSV()
         }
-        FlowRow (
-            modifier = Modifier.fillMaxSize().weight(6F),
-            verticalArrangement = Arrangement.Center
-        ) {
-            WordToFind(wordToFind, isFrench)
-            LazyColumn (
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+        if (count == 0)
+            Row (
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.weight(1F).fillMaxWidth().padding(15.dp)
             ) {
-                items(suggestions) {
-                    suggestion -> SuggestionButton(suggestion, !isFrench) {
-                        if (suggestion.french == wordToFind.french) {
-                            // Success
-                        }
-                        else {
-                            // Error
+                Text(
+                    text = "La liste de mot est vide",
+                    color = Color.White
+                )
+            }
+        else
+            FlowRow (
+                modifier = Modifier.fillMaxSize().weight(6F),
+                verticalArrangement = Arrangement.Center
+            ) {
+                WordToFind(wordToFind, isFrench)
+                LazyColumn (
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(words) {
+                        word -> SuggestionButton(word, !isFrench) {
+                            if (word.french == wordToFind.french) {
+                                return@SuggestionButton true
+                            }
+                            else {
+                                return@SuggestionButton false
+                            }
                         }
                     }
                 }
             }
-        }
         Row (
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Bottom,
             modifier = Modifier.weight(1F).fillMaxWidth().padding(15.dp)
         ) {
             Text(
-                text = "bob?",
+                text = count.toString() + " mots",
                 color = Color.White
             )
         }
