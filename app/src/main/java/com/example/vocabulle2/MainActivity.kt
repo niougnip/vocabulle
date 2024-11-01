@@ -3,6 +3,7 @@
 package com.example.vocabulle2
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -26,10 +27,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +46,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.toColor
 import androidx.room.Room
 import com.example.vocabulle2.ui.theme.Vocabulle2Theme
 import java.io.BufferedReader
@@ -63,9 +63,12 @@ class MainActivity : ComponentActivity() {
         ).allowMainThreadQueries().build()
     }
 
-    private var words: MutableList<DutchWord> = emptyList<DutchWord>().toMutableList()
-    private var wordToFind: DutchWord? = null
-    private var isFrench = false
+//    val isoFR = "FR"
+//    val isoNL = "NL"
+
+//    private var words: MutableList<DutchWord> = emptyList<DutchWord>().toMutableList()
+//    private var wordToFind: DutchWord? = null
+//    private var isFrench = false
     private val listSize = 4
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,18 +77,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             Vocabulle2Theme {
-                createList(listSize)
                 SuggestionScreen()
             }
         }
     }
 
+    @SuppressLint("UnsafeIntentLaunch")
     @Composable
     private fun AddDataFromCSV() {
         val context = LocalContext.current
 
-        val isoFR = "FR"
-        val isoNL = "NL"
         val columnMap: MutableMap<String, Int> = emptyMap<String, Int>().toMutableMap()
 
         val launcher =
@@ -127,7 +128,9 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                    createList(listSize)
+                    intent = intent
+                    finish()
+                    startActivity(intent)
                 }
             }
 
@@ -184,12 +187,18 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    @SuppressLint("MutableCollectionMutableState", "UnsafeIntentLaunch")
     @Composable
     fun WordTest() {
-        val success: String = "SUCCESS"
-        val error: String = "ERROR"
+        val success = "SUCCESS"
+        val error = "ERROR"
 
-        wordToFind?.let { WordToFind(it, isFrench) }
+//        var words : MutableList<DutchWord> = createList(listSize)
+        val mutableWords = remember { mutableStateOf(createList(listSize)) }
+        var wordToFind = pickWord(mutableWords.value)
+        var isFrench = randomLanguage()
+
+        WordToFind(wordToFind, isFrench)
         Column {
             Spacer(Modifier.height(50.dp))
         }
@@ -197,14 +206,25 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
         ) {
-            val list = words
-            items(list) { word ->
+            items(mutableWords.value) { word ->
                 SuggestionButton(word, !isFrench) {
-                    if (word.french == (wordToFind?.french ?: "")) {
-                        createList(listSize)
-                        Log.d("BUTTON", words[1].french)
+                    if (word.french == wordToFind.french) {
+//                        mutableWords.value = createList(listSize)
+//                        wordToFind = pickWord(mutableWords.value)
+//                        isFrench = randomLanguage()
+                        Log.d("BUTTON", mutableWords.value[1].french)
+
+                        intent = Intent(this@MainActivity, SuccessActivity::class.java)
+                        val bundle = Bundle()
+                        bundle.putString(isoFR, wordToFind.french)
+                        bundle.putString(isoNL, wordToFind.dutch)
+                        intent.putExtras(bundle)
+                        startActivity(intent)
+                        finish()
+
                         return@SuggestionButton success
                     } else {
+                        Log.d("BUTTON", mutableWords.value[1].french)
                         return@SuggestionButton error
                     }
                 }
@@ -212,9 +232,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun createList(size: Int) {
+    private fun createList(size: Int = 4) : MutableList<DutchWord> {
         val count = db.dao.countItems()
 
+        val resultList : MutableList<DutchWord> = emptyList<DutchWord>().toMutableList()
         var index: Int
         if (count > 0) {
             for (i in 1..<size) {
@@ -223,14 +244,39 @@ class MainActivity : ComponentActivity() {
                     index = Random.nextInt(0, count) + 1
                     word = db.dao.findByOffset(index)
                     if (word == null) continue
-                    if (words.map { w -> w.french }.none { w -> w == word.french }) {
-                        words += word
+                    if (resultList.map { w -> w.french }.none { w -> w == word.french }) {
+                        resultList += word
                     }
-                } while (words.size <= i)
+                } while (resultList.size <= i)
             }
-            wordToFind = words[Random.nextInt(0, listSize - 1)]
+//            wordToFind = words[Random.nextInt(0, listSize - 1)]
         }
-        isFrench = Random.nextBoolean()
+//        isFrench = Random.nextBoolean()
+        return resultList
+    }
+
+    private fun pickWord(list: MutableList<DutchWord>) : DutchWord {
+        return list[Random.nextInt(0, listSize - 1)]
+    }
+
+    private fun randomLanguage() : Boolean {
+        return Random.nextBoolean()
+    }
+
+    @Composable
+    private fun HelloContent() {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Hello!",
+                modifier = Modifier.padding(bottom = 8.dp),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            OutlinedTextField(
+                value = "",
+                onValueChange = { },
+                label = { Text("Name") }
+            )
+        }
     }
 
     @Composable
@@ -249,7 +295,6 @@ class MainActivity : ComponentActivity() {
             ) {
                 AddDataFromCSV()
             }
-
             FlowRow(
                 horizontalArrangement = Arrangement.Center,
                 verticalArrangement = Arrangement.Center,
@@ -278,19 +323,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    fun SuccessScreen(word: DutchWord) {
-        Column {
-            Icon(
-                painter = painterResource(R.drawable.baseline_check_circle_128),
-                contentDescription = null
-            )
-            Text(
-                text = word.french
-            )
-            Text(
-                text = word.dutch
-            )
-        }
+    companion object {
+        val isoFR: String = "FR"
+        val isoNL: String = "NL"
     }
+
+
 }

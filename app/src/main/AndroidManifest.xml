@@ -19,9 +19,14 @@
             android:theme="@style/Theme.Vocabulle2">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".SuccessActivity"
+            android:exported="true"
+            android:label="success"
+            android:theme="@style/Theme.Vocabulle2">
         </activity>
     </application>
 
