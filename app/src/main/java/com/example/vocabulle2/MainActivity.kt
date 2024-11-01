@@ -119,16 +119,18 @@ class MainActivity : ComponentActivity() {
                             // Get the items
                             while (line != null) {
                                 line = reader.readLine()
+                                if (line == null) break
                                 val resultLine = line.split(";")
                                 val french: String =
                                     columnMap[isoFR]?.let { iso -> resultLine[iso] }.toString()
                                 val dutch: String =
                                     columnMap[isoNL]?.let { iso -> resultLine[iso] }.toString()
-                                db.dao.insert(DutchWord(null, french, dutch))
+                                val exists = db.dao.findItemFromFrench(french)
+                                if (exists == null) db.dao.insert(DutchWord(null, french, dutch))
                             }
                         }
                     }
-                    intent = intent
+                    intent = Intent(this@MainActivity, SuccessActivity::class.java)
                     finish()
                     startActivity(intent)
                 }

@@ -25,4 +25,7 @@ interface DutchWordDao {
 
     @Delete
     fun delete(dutchWord: DutchWord)
+
+    @Query("SELECT * FROM dutchword WHERE french = :french")
+    fun findItemFromFrench(french: String): DutchWord
 }

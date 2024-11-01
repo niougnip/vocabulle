@@ -4,6 +4,9 @@ import android.app.Activity
 import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -14,9 +17,17 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.graphics.shapes.CornerRounding
+import androidx.graphics.shapes.RoundedPolygon
+import androidx.graphics.shapes.toPath
 import com.example.vocabulle2.DutchWord
 
 private val DarkColorScheme = darkColorScheme(
@@ -67,3 +78,26 @@ fun Vocabulle2Theme(
     )
 }
 
+@Composable
+fun CaretDown() {
+    Box(
+        modifier = Modifier.rotate(90F).padding(10.dp)
+            .drawWithCache {
+                val roundedPolygon = RoundedPolygon(
+                    numVertices = 3,
+                    radius = size.minDimension / 2,
+                    centerX = size.width / 2,
+                    centerY = size.height / 2,
+                    rounding = CornerRounding(
+                        size.minDimension / 10f,
+                        smoothing = 0.1f
+                    )
+                )
+                val roundedPolygonPath = roundedPolygon.toPath().asComposePath()
+                onDrawBehind {
+                    drawPath(roundedPolygonPath, color = Color.White)
+                }
+            }
+            .size(30.dp)
+    )
+}
