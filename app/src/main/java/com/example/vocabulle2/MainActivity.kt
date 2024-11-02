@@ -12,8 +12,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -179,14 +182,24 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun WordToFind(value: DutchWord, isFrench: Boolean) {
-        Text(
-            text = if (isFrench) value.french else value.dutch,
-            color = MaterialTheme.colorScheme.tertiary,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            fontSize = 32.sp
-        )
+        Box (
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(20.dp))
+        {
+            Image(
+                painter = painterResource(R.drawable.phyla),
+                contentDescription = null,
+                modifier = Modifier
+            )
+            Text(
+                text = if (isFrench) value.french else value.dutch,
+                color = MaterialTheme.colorScheme.background,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                fontSize = 32.sp,
+            )
+        }
     }
 
     @SuppressLint("MutableCollectionMutableState", "UnsafeIntentLaunch")
@@ -202,7 +215,7 @@ class MainActivity : ComponentActivity() {
 
         WordToFind(wordToFind, isFrench)
         Column {
-            Spacer(Modifier.height(50.dp))
+            Spacer(Modifier.height(250.dp))
         }
         LazyColumn(
             horizontalAlignment = Alignment.CenterHorizontally,

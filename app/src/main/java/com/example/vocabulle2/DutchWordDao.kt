@@ -28,4 +28,10 @@ interface DutchWordDao {
 
     @Query("SELECT * FROM dutchword WHERE french = :french")
     fun findItemFromFrench(french: String): DutchWord
+
+    // het/de
+    @Query("SELECT count(*) FROM dutchword WHERE dutch LIKE 'de %' OR dutch LIKE 'het %'")
+    fun countHetDeWords(): Int
+    @Query("SELECT * FROM dutchword WHERE dutch LIKE 'de %' OR dutch LIKE 'het %' LIMIT 1 OFFSET :offset")
+    fun findHetDeByOffset(offset: Int): DutchWord
 }
