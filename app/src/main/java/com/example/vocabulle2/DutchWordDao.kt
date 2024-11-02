@@ -31,7 +31,7 @@ interface DutchWordDao {
 
     // het/de
     @Query("SELECT count(*) FROM dutchword WHERE dutch LIKE 'de %' OR dutch LIKE 'het %'")
-    fun countHetDeWords(): Int
+    fun countArticleWords(): Int
     @Query("SELECT * FROM dutchword WHERE dutch LIKE 'de %' OR dutch LIKE 'het %' LIMIT 1 OFFSET :offset")
-    fun findHetDeByOffset(offset: Int): DutchWord
+    fun findWithArticleByOffset(offset: Int): DutchWord
 }

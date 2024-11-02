@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -65,6 +64,9 @@ class MainActivity : ComponentActivity() {
             "dutch_word.db"
         ).allowMainThreadQueries().build()
     }
+
+    private val success = "SUCCESS"
+    private val error = "ERROR"
 
 //    val isoFR = "FR"
 //    val isoNL = "NL"
@@ -151,17 +153,17 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun SuggestionButton(value: DutchWord, isFrench: Boolean, onClick: () -> String) {
+    fun SuggestionButton(value: String, onClick: () -> String) {
         var resultString by remember { mutableStateOf("") }
         val color = getColor(resultString)
         Button(
             onClick = { resultString = onClick() },
             colors= ButtonDefaults.buttonColors(color),
-            modifier = Modifier.padding(5.dp)
+            modifier = Modifier.padding(10.dp)
         )
         {
             Text(
-                text = if (isFrench) value.french else value.dutch,
+                text = value,
                 fontSize = 26.sp
             )
         }
@@ -181,7 +183,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun WordToFind(value: DutchWord, isFrench: Boolean) {
+    fun WordToFind(value: String) {
         Box (
             contentAlignment = Alignment.Center,
             modifier = Modifier.padding(20.dp))
@@ -192,7 +194,7 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
             )
             Text(
-                text = if (isFrench) value.french else value.dutch,
+                text = value,
                 color = MaterialTheme.colorScheme.background,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.fillMaxWidth(),
@@ -202,18 +204,49 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @SuppressLint("MutableCollectionMutableState", "UnsafeIntentLaunch")
+    @Composable
+    fun ArticleTest() {
+        var word = pickArticleWord()
+        var dutchWord = word.dutch
+        if (dutchWord.startsWith("het")) {
+            dutchWord = dutchWord.replace("het", "...")
+        } else {
+            dutchWord = dutchWord.replace("de", "...")
+        }
+        val articles: List<String> = listOf<String>("de", "het")
+
+        WordToFind(dutchWord)
+        Column {
+            Spacer(Modifier.height(250.dp))
+        }
+        LazyColumn(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(articles) { article ->
+                SuggestionButton(article) {
+                    Log.d("TEST", "$article $dutchWord")
+                    if (word.dutch.startsWith(article)) {
+                        showSuccessScreen(word)
+                        return@SuggestionButton success
+                    } else {
+                        return@SuggestionButton error
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressLint("MutableCollectionMutableState")
     @Composable
     fun WordTest() {
-        val success = "SUCCESS"
-        val error = "ERROR"
 
-//        var words : MutableList<DutchWord> = createList(listSize)
         val mutableWords = remember { mutableStateOf(createList(listSize)) }
-        var wordToFind = pickWord(mutableWords.value)
-        var isFrench = randomLanguage()
+        val wordToFind = pickWord(mutableWords.value)
+        val isFrench = randomLanguage()
+        val wordValue: String = if (isFrench) wordToFind.french else wordToFind.dutch
 
-        WordToFind(wordToFind, isFrench)
+        WordToFind(wordValue)
         Column {
             Spacer(Modifier.height(250.dp))
         }
@@ -222,29 +255,37 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth()
         ) {
             items(mutableWords.value) { word ->
-                SuggestionButton(word, !isFrench) {
+                SuggestionButton(if (isFrench) word.dutch else word.french) {
                     if (word.french == wordToFind.french) {
-//                        mutableWords.value = createList(listSize)
-//                        wordToFind = pickWord(mutableWords.value)
-//                        isFrench = randomLanguage()
-                        Log.d("BUTTON", mutableWords.value[1].french)
-
-                        intent = Intent(this@MainActivity, SuccessActivity::class.java)
-                        val bundle = Bundle()
-                        bundle.putString(isoFR, wordToFind.french)
-                        bundle.putString(isoNL, wordToFind.dutch)
-                        intent.putExtras(bundle)
-                        startActivity(intent)
-                        finish()
-
+                        showSuccessScreen(wordToFind)
                         return@SuggestionButton success
                     } else {
-                        Log.d("BUTTON", mutableWords.value[1].french)
                         return@SuggestionButton error
                     }
                 }
             }
         }
+    }
+
+    @SuppressLint("UnsafeIntentLaunch")
+    private fun showSuccessScreen(word: DutchWord) {
+        intent = Intent(this@MainActivity, SuccessActivity::class.java)
+        val bundle = Bundle()
+        bundle.putString(isoFR, word.french)
+        bundle.putString(isoNL, word.dutch)
+        intent.putExtras(bundle)
+        startActivity(intent)
+        finish()
+    }
+
+    private fun pickArticleWord(): DutchWord {
+        val count = db.dao.countArticleWords()
+        val index = Random.nextInt(0, count) + 1
+        var word: DutchWord
+        do {
+            word = db.dao.findWithArticleByOffset(index)
+        } while (word == null)
+        return word
     }
 
     private fun createList(size: Int = 4) : MutableList<DutchWord> {
@@ -264,9 +305,7 @@ class MainActivity : ComponentActivity() {
                     }
                 } while (resultList.size <= i)
             }
-//            wordToFind = words[Random.nextInt(0, listSize - 1)]
         }
-//        isFrench = Random.nextBoolean()
         return resultList
     }
 
@@ -308,7 +347,7 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier.weight(1F).fillMaxWidth().padding(padding)
             ) {
-                AddDataFromCSV()
+//                AddDataFromCSV()
             }
             FlowRow(
                 horizontalArrangement = Arrangement.Center,
@@ -321,7 +360,10 @@ class MainActivity : ComponentActivity() {
                         color = Color.White
                     )
                 } else {
-                    WordTest()
+                    if (Random.nextInt(0, 10) == 0)
+                        ArticleTest()
+                    else
+                        WordTest()
                 }
             }
 
@@ -330,10 +372,13 @@ class MainActivity : ComponentActivity() {
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.weight(1F).fillMaxWidth().padding(padding)
             ) {
-                Text(
-                    text = count.toString() + " mots",
-                    color = Color.White
-                )
+                Row (verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = count.toString() + " mots",
+                        color = Color.White
+                    )
+                    AddDataFromCSV()
+                }
             }
         }
     }
