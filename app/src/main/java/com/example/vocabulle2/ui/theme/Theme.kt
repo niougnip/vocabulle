@@ -67,9 +67,9 @@ fun Vocabulle2Theme(
 }
 
 @Composable
-fun CaretDown() {
+fun RoundedCaret(rotation: Float = 0F, opacity: Float = 1.0F) {
     Box(
-        modifier = Modifier.rotate(90F).padding(10.dp)
+        modifier = Modifier.rotate(rotation)
             .drawWithCache {
                 val roundedPolygon = RoundedPolygon(
                     numVertices = 3,
@@ -83,7 +83,7 @@ fun CaretDown() {
                 )
                 val roundedPolygonPath = roundedPolygon.toPath().asComposePath()
                 onDrawBehind {
-                    drawPath(roundedPolygonPath, color = Color.White)
+                    drawPath(roundedPolygonPath, color = Color(1F,1F,1F,opacity))
                 }
             }
             .size(30.dp)

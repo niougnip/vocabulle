@@ -1,6 +1,4 @@
-@file:OptIn(ExperimentalLayoutApi::class)
-
-package com.example.vocabulle2
+package com.example.vocabulle2.activities
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -14,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +31,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,14 +47,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.room.Room
+import com.example.vocabulle2.AppDatabase
+import com.example.vocabulle2.R
+import com.example.vocabulle2.TranslationEntity
+import com.example.vocabulle2.ui.theme.RoundedCaret
 import com.example.vocabulle2.ui.theme.Vocabulle2Theme
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 import kotlin.random.Random
 
-class MainActivity : ComponentActivity() {
-
+class WordTestActivity: ComponentActivity() {
     private val db by lazy {
         Room.databaseBuilder(
             applicationContext,
@@ -68,17 +69,15 @@ class MainActivity : ComponentActivity() {
     private val success = "SUCCESS"
     private val error = "ERROR"
 
-//    val isoFR = "FR"
-//    val isoNL = "NL"
+    private var isoCode = "NL"
 
-//    private var words: MutableList<DutchWord> = emptyList<DutchWord>().toMutableList()
-//    private var wordToFind: DutchWord? = null
-//    private var isFrench = false
     private val listSize = 4
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        isoCode = intent.getStringExtra("ISO").toString()
 
         setContent {
             Vocabulle2Theme {
@@ -87,70 +86,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @SuppressLint("UnsafeIntentLaunch")
-    @Composable
-    private fun AddDataFromCSV() {
-        val context = LocalContext.current
 
-        val columnMap: MutableMap<String, Int> = emptyMap<String, Int>().toMutableMap()
-
-        val launcher =
-            rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { result ->
-                result?.let {
-                    context.contentResolver.openInputStream(it).use { inputStream ->
-                        BufferedReader(InputStreamReader(inputStream, Charset.forName("UTF8"))).use { reader ->
-                            // Get the column header
-                            var line: String? = reader.readLine()
-                            if (line != null) {
-                                if (line.contains(isoFR, true) && line.contains(isoNL, true)) {
-                                    val isoCodes = line.split(";")
-                                    isoCodes.forEachIndexed { index, code ->
-                                        columnMap[code] = index
-                                    }
-                                } else {
-                                    // ERROR
-                                    Toast.makeText(
-                                        context,
-                                        "La première ligne doit contenir les codes iso NL et FR",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            } else {
-                                // ERROR
-                                Toast.makeText(context, "Le fichier est vide", Toast.LENGTH_LONG)
-                                    .show()
-                            }
-
-                            // Get the items
-                            while (line != null) {
-                                line = reader.readLine()
-                                if (line == null) break
-                                val resultLine = line.split(";")
-                                val french: String =
-                                    columnMap[isoFR]?.let { iso -> resultLine[iso] }.toString()
-                                val dutch: String =
-                                    columnMap[isoNL]?.let { iso -> resultLine[iso] }.toString()
-                                val exists = db.dao.findItemFromFrench(french)
-                                if (exists == null) db.dao.insert(DutchWord(null, french, dutch))
-                            }
-                        }
-                    }
-                    intent = Intent(this@MainActivity, SuccessActivity::class.java)
-                    finish()
-                    startActivity(intent)
-                }
-            }
-
-        return IconButton(
-            onClick = { launcher.launch("text/*") }
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.baseline_add_512),
-                contentDescription = "Add csv",
-                tint = Color.White
-            )
-        }
-    }
 
     @Composable
     fun SuggestionButton(value: String, onClick: () -> String) {
@@ -207,7 +143,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ArticleTest() {
         var word = pickArticleWord()
-        var dutchWord = word.dutch
+        var dutchWord = word.other
         if (dutchWord.startsWith("het")) {
             dutchWord = dutchWord.replace("het", "...")
         } else {
@@ -226,7 +162,7 @@ class MainActivity : ComponentActivity() {
             items(articles) { article ->
                 SuggestionButton(article) {
                     Log.d("TEST", "$article $dutchWord")
-                    if (word.dutch.startsWith(article)) {
+                    if (word.other.startsWith(article)) {
                         showSuccessScreen(word)
                         return@SuggestionButton success
                     } else {
@@ -243,8 +179,8 @@ class MainActivity : ComponentActivity() {
 
         val mutableWords = remember { mutableStateOf(createList(listSize)) }
         val wordToFind = pickWord(mutableWords.value)
-        val isFrench = randomLanguage()
-        val wordValue: String = if (isFrench) wordToFind.french else wordToFind.dutch
+        val isFrench = randomTranslation()
+        val wordValue: String = if (isFrench) wordToFind.french else wordToFind.other
 
         WordToFind(wordValue)
         Column {
@@ -255,7 +191,7 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth()
         ) {
             items(mutableWords.value) { word ->
-                SuggestionButton(if (isFrench) word.dutch else word.french) {
+                SuggestionButton(if (isFrench) word.other else word.french) {
                     if (word.french == wordToFind.french) {
                         showSuccessScreen(wordToFind)
                         return@SuggestionButton success
@@ -268,37 +204,38 @@ class MainActivity : ComponentActivity() {
     }
 
     @SuppressLint("UnsafeIntentLaunch")
-    private fun showSuccessScreen(word: DutchWord) {
-        intent = Intent(this@MainActivity, SuccessActivity::class.java)
+    private fun showSuccessScreen(word: TranslationEntity) {
+        intent = Intent(this@WordTestActivity, SuccessActivity::class.java)
         val bundle = Bundle()
-        bundle.putString(isoFR, word.french)
-        bundle.putString(isoNL, word.dutch)
+        bundle.putString("FR", word.french)
+        bundle.putString("OTHER", word.other)
+        bundle.putString("ISO", isoCode)
         intent.putExtras(bundle)
         startActivity(intent)
         finish()
     }
 
-    private fun pickArticleWord(): DutchWord {
+    private fun pickArticleWord(): TranslationEntity {
         val count = db.dao.countArticleWords()
         val index = Random.nextInt(0, count) + 1
-        var word: DutchWord
+        var word: TranslationEntity
         do {
             word = db.dao.findWithArticleByOffset(index)
         } while (word == null)
         return word
     }
 
-    private fun createList(size: Int = 4) : MutableList<DutchWord> {
-        val count = db.dao.countItems()
+    private fun createList(size: Int = 4) : MutableList<TranslationEntity> {
+        val count = db.dao.countItems(isoCode)
 
-        val resultList : MutableList<DutchWord> = emptyList<DutchWord>().toMutableList()
+        val resultList : MutableList<TranslationEntity> = emptyList<TranslationEntity>().toMutableList()
         var index: Int
         if (count > 0) {
             for (i in 1..<size) {
-                var word: DutchWord
+                var word: TranslationEntity
                 do {
                     index = Random.nextInt(0, count) + 1
-                    word = db.dao.findByOffset(index)
+                    word = db.dao.findByOffset(isoCode, index)
                     if (word == null) continue
                     if (resultList.map { w -> w.french }.none { w -> w == word.french }) {
                         resultList += word
@@ -309,33 +246,19 @@ class MainActivity : ComponentActivity() {
         return resultList
     }
 
-    private fun pickWord(list: MutableList<DutchWord>) : DutchWord {
+    private fun pickWord(list: MutableList<TranslationEntity>) : TranslationEntity {
         return list[Random.nextInt(0, listSize - 1)]
     }
 
-    private fun randomLanguage() : Boolean {
+    private fun randomTranslation() : Boolean {
         return Random.nextBoolean()
     }
 
-    @Composable
-    private fun HelloContent() {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Hello!",
-                modifier = Modifier.padding(bottom = 8.dp),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            OutlinedTextField(
-                value = "",
-                onValueChange = { },
-                label = { Text("Name") }
-            )
-        }
-    }
-
+    @SuppressLint("UnsafeIntentLaunch")
+    @OptIn(ExperimentalLayoutApi::class)
     @Composable
     fun SuggestionScreen() {
-        val count = db.dao.countItems()
+        val count = db.dao.countItems(isoCode)
 
         val padding = 20.dp
 
@@ -344,10 +267,13 @@ class MainActivity : ComponentActivity() {
                 .fillMaxHeight()
         ) {
             Row(
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier.weight(1F).fillMaxWidth().padding(padding)
+                modifier = Modifier.weight(1F).padding(padding)
             ) {
-//                AddDataFromCSV()
+                Box(modifier = Modifier.clickable {
+                    intent = Intent(this@WordTestActivity, MainActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                }) { RoundedCaret(180F, 0.5F) }
             }
             FlowRow(
                 horizontalArrangement = Arrangement.Center,
@@ -360,7 +286,7 @@ class MainActivity : ComponentActivity() {
                         color = Color.White
                     )
                 } else {
-                    if (Random.nextInt(0, 10) == 0)
+                    if (isoCode == "NL" && Random.nextInt(0, 10) == 0)
                         ArticleTest()
                     else
                         WordTest()
@@ -377,16 +303,8 @@ class MainActivity : ComponentActivity() {
                         text = count.toString() + " mots",
                         color = Color.White
                     )
-                    AddDataFromCSV()
                 }
             }
         }
     }
-
-    companion object {
-        val isoFR: String = "FR"
-        val isoNL: String = "NL"
-    }
-
-
 }
