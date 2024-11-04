@@ -5,36 +5,48 @@ package com.example.vocabulle2.activities
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowColumn
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.room.Room
@@ -42,10 +54,12 @@ import com.example.vocabulle2.AppDatabase
 import com.example.vocabulle2.IsoCodeList
 import com.example.vocabulle2.R
 import com.example.vocabulle2.TranslationEntity
+import com.example.vocabulle2.ui.theme.RoundedCaret
 import com.example.vocabulle2.ui.theme.Vocabulle2Theme
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.nio.charset.Charset
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     private val db by lazy {
@@ -56,34 +70,51 @@ class MainActivity : ComponentActivity() {
         ).allowMainThreadQueries().build()
     }
 
-    @SuppressLint("UnsafeIntentLaunch")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        val isoCodes: List<String> = db.dao.getIsoCodes().filter { code -> code != "FR" };
-
         setContent {
             Vocabulle2Theme {
-                Column (modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background, RectangleShape))
-                {
-                    Row (modifier = Modifier.weight(6F),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Flags(isoCodes)
-                    }
-                    Row (modifier = Modifier.weight(1F).fillMaxWidth().padding(20.dp),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.Center) {
-                        AddDataFromCSV()
-                    }
-                }
+                FlagScreen()
             }
         }
     }
 
+
+    @SuppressLint("UnsafeIntentLaunch")
+    @Composable
+    private fun FlagScreen() {
+        val isoCodes: List<String> = db.dao.getIsoCodes().filter { code -> code != "FR" }
+        val showScreen: Boolean = intent.getBooleanExtra("SHOW_SCREEN", false)
+
+        if (isoCodes.size == 1 && !showScreen) {
+            intent = Intent(this@MainActivity, WordTestActivity::class.java)
+            val bundle = Bundle()
+            bundle.putString("ISO", isoCodes[0])
+            intent.putExtras(bundle)
+            startActivity(intent)
+            finish()
+            return
+        }
+
+        return Column (modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background, RectangleShape))
+        {
+            Row (modifier = Modifier.weight(6F),
+                verticalAlignment = Alignment.CenterVertically) {
+                Flags(isoCodes)
+            }
+            Row (modifier = Modifier.weight(1F).fillMaxWidth().padding(20.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.Center) {
+                AddDataFromCSV()
+            }
+        }
+    }
+
+    @SuppressLint("UnsafeIntentLaunch")
     @Composable
     private fun Flags(isoCodes: List<String>) {
         FlowColumn(
@@ -154,12 +185,22 @@ class MainActivity : ComponentActivity() {
                                 line = reader.readLine()
                                 if (line == null) break
                                 val resultLine = line.split(";")
-                                val french: String =
-                                    columnMap["FR"]?.let { iso -> resultLine[iso] }.toString()
-                                val other: String =
-                                    columnMap[otherCode]?.let { iso -> resultLine[iso] }.toString()
-                                val exists = db.dao.findItemFromFrench(french, otherCode)
-                                if (exists == null) db.dao.insert(TranslationEntity(null, french, other, otherCode))
+                                if (resultLine.size == 2) {
+                                    val french: String =
+                                        columnMap["FR"]?.let { iso -> resultLine[iso] }.toString()
+                                    val other: String =
+                                        columnMap[otherCode]?.let { iso -> resultLine[iso] }
+                                            .toString()
+                                    val exists = db.dao.findItemFromFrench(french, otherCode)
+                                    if (exists == null) db.dao.insert(
+                                        TranslationEntity(
+                                            null,
+                                            french,
+                                            other,
+                                            otherCode
+                                        )
+                                    )
+                                }
                             }
                         }
                     }

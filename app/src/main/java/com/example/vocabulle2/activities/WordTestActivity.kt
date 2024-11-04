@@ -3,13 +3,9 @@ package com.example.vocabulle2.activities
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,8 +24,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,9 +45,6 @@ import com.example.vocabulle2.R
 import com.example.vocabulle2.TranslationEntity
 import com.example.vocabulle2.ui.theme.RoundedCaret
 import com.example.vocabulle2.ui.theme.Vocabulle2Theme
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.nio.charset.Charset
 import kotlin.random.Random
 
 class WordTestActivity: ComponentActivity() {
@@ -65,6 +55,8 @@ class WordTestActivity: ComponentActivity() {
             "dutch_word.db"
         ).allowMainThreadQueries().build()
     }
+
+
 
     private val success = "SUCCESS"
     private val error = "ERROR"
@@ -86,8 +78,6 @@ class WordTestActivity: ComponentActivity() {
         }
     }
 
-
-
     @Composable
     fun SuggestionButton(value: String, onClick: () -> String) {
         var resultString by remember { mutableStateOf("") }
@@ -100,7 +90,8 @@ class WordTestActivity: ComponentActivity() {
         {
             Text(
                 text = value,
-                fontSize = 26.sp
+                fontSize = 26.sp,
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -135,41 +126,8 @@ class WordTestActivity: ComponentActivity() {
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
-                fontSize = 32.sp,
+                fontSize = 32.sp
             )
-        }
-    }
-
-    @Composable
-    fun ArticleTest() {
-        var word = pickArticleWord()
-        var dutchWord = word.other
-        if (dutchWord.startsWith("het")) {
-            dutchWord = dutchWord.replace("het", "...")
-        } else {
-            dutchWord = dutchWord.replace("de", "...")
-        }
-        val articles: List<String> = listOf<String>("de", "het")
-
-        WordToFind(dutchWord)
-        Column {
-            Spacer(Modifier.height(250.dp))
-        }
-        LazyColumn(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(articles) { article ->
-                SuggestionButton(article) {
-                    Log.d("TEST", "$article $dutchWord")
-                    if (word.other.startsWith(article)) {
-                        showSuccessScreen(word)
-                        return@SuggestionButton success
-                    } else {
-                        return@SuggestionButton error
-                    }
-                }
-            }
         }
     }
 
@@ -213,16 +171,6 @@ class WordTestActivity: ComponentActivity() {
         intent.putExtras(bundle)
         startActivity(intent)
         finish()
-    }
-
-    private fun pickArticleWord(): TranslationEntity {
-        val count = db.dao.countArticleWords()
-        val index = Random.nextInt(0, count) + 1
-        var word: TranslationEntity
-        do {
-            word = db.dao.findWithArticleByOffset(index)
-        } while (word == null)
-        return word
     }
 
     private fun createList(size: Int = 4) : MutableList<TranslationEntity> {
@@ -269,8 +217,11 @@ class WordTestActivity: ComponentActivity() {
             Row(
                 modifier = Modifier.weight(1F).padding(padding)
             ) {
-                Box(modifier = Modifier.clickable {
+                Box(modifier = Modifier.padding(0.dp, 15.dp).clickable {
                     intent = Intent(this@WordTestActivity, MainActivity::class.java)
+                    val bundle = Bundle()
+                    bundle.putBoolean("SHOW_SCREEN", true)
+                    intent.putExtras(bundle)
                     startActivity(intent)
                     finish()
                 }) { RoundedCaret(180F, 0.5F) }
@@ -286,10 +237,7 @@ class WordTestActivity: ComponentActivity() {
                         color = Color.White
                     )
                 } else {
-                    if (isoCode == "NL" && Random.nextInt(0, 10) == 0)
-                        ArticleTest()
-                    else
-                        WordTest()
+                    WordTest()
                 }
             }
 

@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.vocabulle2.R
@@ -82,9 +83,9 @@ class SuccessActivity : ComponentActivity() {
                 }
                 if (french != null) {
                     item { Spacer(Modifier.height(50.dp)) }
-                    item { Text(text = french ?: "", fontSize = 32.sp, color = Color.White) }
+                    item { Text(text = french ?: "", fontSize = 32.sp, color = Color.White, textAlign = TextAlign.Center) }
                     item { Box(modifier = Modifier.padding(15.dp)) { RoundedCaret(90F) } }
-                    item { Text(text = dutch ?: "", fontSize = 32.sp, color = Color.White) }
+                    item { Text(text = dutch ?: "", fontSize = 32.sp, color = Color.White, textAlign = TextAlign.Center) }
                 }
             }
         }

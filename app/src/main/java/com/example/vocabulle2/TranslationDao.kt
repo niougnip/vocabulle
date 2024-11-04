@@ -31,10 +31,4 @@ interface TranslationDao {
 
     @Query("SELECT * FROM TranslationEntity WHERE french = :french AND isoCode = :isoCode")
     fun findItemFromFrench(french: String, isoCode: String): TranslationEntity
-
-    // het/de
-    @Query("SELECT count(*) FROM TranslationEntity WHERE (other LIKE 'de %' OR other LIKE 'het %') AND isoCode = 'NL'")
-    fun countArticleWords(): Int
-    @Query("SELECT * FROM TranslationEntity WHERE (other LIKE 'de %' OR other LIKE 'het %') AND isoCode = 'NL' LIMIT 1 OFFSET :offset")
-    fun findWithArticleByOffset(offset: Int): TranslationEntity
 }
