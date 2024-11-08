@@ -8,6 +8,6 @@ import androidx.room.PrimaryKey
 data class TranslationEntity(
     @PrimaryKey(autoGenerate = true) val uid: Int?,
     @ColumnInfo(name = "french") var french: String,
-    @ColumnInfo(name = "other") val other: String,
+    @ColumnInfo(name = "other") var other: String,
     @ColumnInfo(name = "isoCode") val isoCode: String
 )

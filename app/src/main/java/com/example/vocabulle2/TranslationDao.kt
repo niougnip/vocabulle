@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 
 @Dao
 interface TranslationDao {
@@ -31,4 +32,10 @@ interface TranslationDao {
 
     @Query("SELECT * FROM TranslationEntity WHERE french = :french AND isoCode = :isoCode")
     fun findItemFromFrench(french: String, isoCode: String): TranslationEntity
+
+    @Upsert
+    fun save(word: TranslationEntity)
+
+    @Query("SELECT * FROM translationentity WHERE uid = :id")
+    fun findById(id: Int): TranslationEntity
 }

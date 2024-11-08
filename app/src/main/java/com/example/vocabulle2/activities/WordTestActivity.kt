@@ -41,10 +41,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.room.Room
 import com.example.vocabulle2.AppDatabase
+import com.example.vocabulle2.IsoCodeList
 import com.example.vocabulle2.R
 import com.example.vocabulle2.TranslationEntity
 import com.example.vocabulle2.ui.theme.RoundedCaret
+import com.example.vocabulle2.ui.theme.Success
 import com.example.vocabulle2.ui.theme.Vocabulle2Theme
+import com.example.vocabulle2.ui.theme.Warning
 import kotlin.random.Random
 
 class WordTestActivity: ComponentActivity() {
@@ -55,8 +58,6 @@ class WordTestActivity: ComponentActivity() {
             "dutch_word.db"
         ).allowMainThreadQueries().build()
     }
-
-
 
     private val success = "SUCCESS"
     private val error = "ERROR"
@@ -101,9 +102,9 @@ class WordTestActivity: ComponentActivity() {
         val success: String = "SUCCESS"
         val error: String = "ERROR"
         if (resultString == success) {
-            return Color(117, 201, 69, 255)
+            return Success
         } else if (resultString == error) {
-            return Color(196, 57, 57, 255)
+            return Warning
         } else {
             return MaterialTheme.colorScheme.primary
         }
@@ -165,6 +166,7 @@ class WordTestActivity: ComponentActivity() {
     private fun showSuccessScreen(word: TranslationEntity) {
         intent = Intent(this@WordTestActivity, SuccessActivity::class.java)
         val bundle = Bundle()
+        word.uid?.let { bundle.putInt("ID", it) }
         bundle.putString("FR", word.french)
         bundle.putString("OTHER", word.other)
         bundle.putString("ISO", isoCode)

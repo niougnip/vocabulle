@@ -11,14 +11,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowColumn
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,10 +45,11 @@ class SuccessActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Vocabulle2Theme {
+                val id = intent.getIntExtra("ID", -1)
                 val french = intent.getStringExtra("FR")
                 val other = intent.getStringExtra("OTHER")
                 isoCode = intent.getStringExtra("ISO").toString()
-                SuccessScreen(french, other)
+                SuccessScreen(french, other, id)
             }
         }
     }
@@ -53,40 +57,72 @@ class SuccessActivity : ComponentActivity() {
     @OptIn(ExperimentalLayoutApi::class)
     @SuppressLint("NotConstructor", "UnsafeIntentLaunch")
     @Composable
-    fun SuccessScreen(french: String?, dutch: String?) {
-        FlowColumn(
-            horizontalArrangement = Arrangement.Center,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
+    fun SuccessScreen(french: String?, other: String?, id: Int) {
+        Column(
+            Modifier.background(MaterialTheme.colorScheme.background, RectangleShape)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.background, RectangleShape)
-                .clickable(true, "suivant", null, {
-                    intent = Intent(this@SuccessActivity, WordTestActivity::class.java)
-                    val bundle = Bundle()
-                    bundle.putString("ISO", isoCode)
-                    intent.putExtras(bundle)
-                    startActivity(intent)
-                    finish()
-                })
         ) {
-
-            LazyColumn (
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+            Row (modifier = Modifier.weight(1F).fillMaxWidth()) {}
+            FlowColumn(
+                horizontalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxHeight().weight(6F)
+                    .clickable(true, "suivant", null, {
+                        intent = Intent(this@SuccessActivity, WordTestActivity::class.java)
+                        val bundle = Bundle()
+                        bundle.putString("ISO", isoCode)
+                        intent.putExtras(bundle)
+                        startActivity(intent)
+                        finish()
+                    })
             ) {
-                item {
-                    Image(
-                        painter = painterResource(R.drawable.baseline_check_circle_128),
-                        contentDescription = null
-                    )
+
+                LazyColumn(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    item {
+                        Image(
+                            painter = painterResource(R.drawable.baseline_check_circle_128),
+                            contentDescription = null
+                        )
+                    }
+                    if (french != null) {
+                        item { Spacer(Modifier.height(50.dp)) }
+                        item {
+                            Text(
+                                text = french ?: "",
+                                fontSize = 32.sp,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        item { Box(modifier = Modifier.padding(15.dp)) { RoundedCaret(90F) } }
+                        item {
+                            Text(
+                                text = other ?: "",
+                                fontSize = 32.sp,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
                 }
-                if (french != null) {
-                    item { Spacer(Modifier.height(50.dp)) }
-                    item { Text(text = french ?: "", fontSize = 32.sp, color = Color.White, textAlign = TextAlign.Center) }
-                    item { Box(modifier = Modifier.padding(15.dp)) { RoundedCaret(90F) } }
-                    item { Text(text = dutch ?: "", fontSize = 32.sp, color = Color.White, textAlign = TextAlign.Center) }
-                }
+            }
+            Row (modifier = Modifier.weight(1F).fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center) {
+                Button(
+                    onClick = {
+                        intent = Intent(this@SuccessActivity, WordCrudActivity::class.java)
+                        val bundle = Bundle()
+                        bundle.putInt("ID", id)
+                        intent.putExtras(bundle)
+                        startActivity(intent)
+                        finish()
+                    }
+                ) { Text("Modifier") }
             }
         }
     }

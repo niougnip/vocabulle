@@ -2,9 +2,11 @@ package com.example.vocabulle2.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -88,4 +90,29 @@ fun RoundedCaret(rotation: Float = 0F, opacity: Float = 1.0F) {
             }
             .size(30.dp)
     )
+}
+
+@Composable
+fun ButtonSuccess(label: String, onClick: () -> Unit) {
+    Button (
+        onClick = {
+            onClick()
+        },
+        colors = ButtonDefaults.buttonColors(containerColor = Success)
+    ) {
+        Text(text = label, color = Color.White)
+    }
+}
+
+
+@Composable
+fun ButtonWarning(label: String, onClick: () -> Unit) {
+    Button (
+        onClick = {
+            onClick()
+        },
+        colors = ButtonDefaults.buttonColors(containerColor = Warning)
+    ) {
+        Text(text = label, color = Color.White)
+    }
 }

@@ -34,6 +34,12 @@
             android:label="success"
             android:theme="@style/Theme.Vocabulle2">
         </activity>
+        <activity
+            android:name=".activities.WordCrudActivity"
+            android:exported="true"
+            android:label="crud"
+            android:theme="@style/Theme.Vocabulle2">
+        </activity>
     </application>
 
 </manifest>
